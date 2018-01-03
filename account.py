@@ -1,6 +1,10 @@
+import sha3
+import qrcode_terminal
+import getpass
+
 from bitmerchant.wallet import Wallet
 from ecdsa import SigningKey, SECP256k1
-import sha3
+from lockbox import encrypt
 
 class Account(object):
     def __init__(self,
@@ -42,6 +46,15 @@ class Account(object):
     @classmethod
     def generate(cls):
         raise NotImplemented('This function must be overridden by subclasses')
+
+    def print_qrcode(self):
+        print('Address: ')
+        qrcode_terminal.draw(self._address)
+
+    def encrypted_priv_key(self):
+        passphrase = getpass.getpass('Enter passphrase: ').encode('utf-8')
+        encrypted_key = encrypt(passphrase, self.priv_key())
+        qrcode_terminal.draw(encrypted_key)
 
 class EthereumAccount(Account):
     @classmethod
@@ -106,6 +119,12 @@ class BitcoinAccount(Account):
 if __name__ == '__main__':
     bitcoin = BitcoinAccount.generate()
     print(bitcoin)
+    bitcoin.print_qrcode()
+    bitcoin.encrypted_priv_key()
+
+    print()
 
     ether = EthereumAccount.generate()
     print(ether)
+    ether.print_qrcode()
+    ether.encrypted_priv_key()

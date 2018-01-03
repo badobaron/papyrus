@@ -3,3 +3,6 @@ pdbpp
 ecdsa
 pysha3
 bitmerchant
+qrcode
+qrcode_terminal
+git+https://github.com/kyokley/lockbox.git
