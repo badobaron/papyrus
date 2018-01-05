@@ -6,3 +6,4 @@ bitmerchant
 qrcode
 qrcode_terminal
 git+https://github.com/kyokley/lockbox.git
+docopt
