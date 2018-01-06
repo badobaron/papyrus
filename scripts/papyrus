@@ -1,0 +1,23 @@
+#!/usr/bin/env python
+"""
+Usage:
+    papyrus generate <account_type> [options]
+    papyrus recover <encrypted_key>
+    papyrus --help
+
+Arguments:
+    account_type   Type of account (ethereum or bitcoin)
+    encrypted_key  Encrypted key
+
+Options:
+    -a FILE --address=FILE      file to be used for outputted address
+                                specifying FILE with a '.png' extension
+                                will write the data as a QR code
+    -p FILE --private_key=FILE  file to be used for outputted encrypted private key
+                                specifying FILE with a '.png' extension
+                                will write the data as a QR code
+"""
+import getpass
+
+from docopt import docopt
+from blessings import Terminal

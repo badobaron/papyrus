@@ -51,8 +51,7 @@ class Account(object):
         print('Address: ')
         qrcode_terminal.draw(self._address)
 
-    def encrypted_priv_key(self):
-        passphrase = getpass.getpass('Enter passphrase: ').encode('utf-8')
+    def encrypted_priv_key(self, passphrase):
         encrypted_key = encrypt(passphrase, self.priv_key())
         qrcode_terminal.draw(encrypted_key)
 
