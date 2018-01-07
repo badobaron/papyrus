@@ -44,18 +44,19 @@ def generate(account_type,
              address_qrcode_file=None,
              private_key_file=None,
              private_key_qrcode_file=None):
-    passphrase = getpass.getpass('Enter passphrase: ')
-    confirmed_passphrase = getpass.getpass('Confirm passphrase: ')
-
-    if passphrase != confirmed_passphrase:
-        raise PapyrusException('Passphrases do not match')
-
     if account_type == BITCOIN:
         account = BitcoinAccount.generate()
     elif account_type == ETHEREUM:
         account = EthereumAccount.generate()
     else:
         raise PapyrusException('Invalid account type: {}'.format(account_type))
+
+    passphrase = getpass.getpass('Enter passphrase: ')
+    confirmed_passphrase = getpass.getpass('Confirm passphrase: ')
+
+    if passphrase != confirmed_passphrase:
+        raise PapyrusException('Passphrases do not match')
+
 
     encrypted_key = account.encrypted_priv_key(passphrase)
 
