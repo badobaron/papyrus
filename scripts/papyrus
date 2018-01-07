@@ -2,7 +2,7 @@
 """
 Usage:
     papyrus generate <account_type> [--address_file=<FILE>] [--address_qrcode=<FILE>]
-                                    [--key_file=<FILE>] [--key_qrcode=<FILE>]
+                                    [--key_file=<FILE>] [--key_qrcode=<FILE>] [--stdout_qrcode]
     papyrus recover ((<encrypted_key_file> | --key_file=<FILE>) | --key_qrcode=<FILE> | --key=<STRING> | [-])
                     (<decrypted_key_file> | --decrypted_key_qrcode=<FILE> | [--stdout --stdout_qrcode])
     papyrus --version
@@ -22,7 +22,7 @@ Options:
     --key_qrcode=<FILE>            file to be used for encrypted private key data in QR code form
     --decrypted_key_qrcode=<FILE>  file to be used for decrypted private key data in QR code form
     --stdout                       use stdout to display decrypted data
-    --stdout_qrcode                display in-terminal qrcode of the decrypted data
+    --stdout_qrcode                display in-terminal qrcode of the data
     -h --help                      display this help
 
 Be extremely careful using the --stdout flag. Using this flag will display your decrypted data in the terminal.
@@ -55,7 +55,8 @@ def generate(account_type,
              address_file=None,
              address_qrcode_file=None,
              key_file=None,
-             key_qrcode=None):
+             key_qrcode=None,
+             stdout_qrcode=False):
     if account_type == BITCOIN:
         account = BitcoinAccount.generate()
     elif account_type == ETHEREUM:
@@ -83,6 +84,10 @@ def generate(account_type,
         img = qrcode.make(encrypted_key)
         img.save(key_qrcode)
 
+    if stdout_qrcode:
+        print()
+        qrcode_terminal.draw(encrypted_key)
+
     print()
     print('Address: ')
     print(account.address())
@@ -94,6 +99,10 @@ def generate(account_type,
     if address_qrcode_file:
         img = qrcode.make(account.address())
         img.save(address_qrcode_file)
+
+    if stdout_qrcode:
+        print()
+        qrcode_terminal.draw(account.address())
 
 
 def recover(data,
@@ -166,7 +175,8 @@ if __name__ == '__main__':
                          address_file=address_file,
                          address_qrcode_file=address_qrcode_file,
                          key_file=key_file,
-                         key_qrcode=key_qrcode)
+                         key_qrcode=key_qrcode,
+                         stdout_qrcode=stdout_qrcode)
             elif args['recover']:
                 data = get_key_data(key, key_file, key_qrcode)
 
