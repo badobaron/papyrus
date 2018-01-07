@@ -1,10 +1,12 @@
 import sha3
 import qrcode_terminal
-import getpass
 
 from bitmerchant.wallet import Wallet
 from ecdsa import SigningKey, SECP256k1
 from lockbox import encrypt
+
+class PapyrusException(Exception):
+    pass
 
 class Account(object):
     def __init__(self,
@@ -52,8 +54,7 @@ class Account(object):
         qrcode_terminal.draw(self._address)
 
     def encrypted_priv_key(self, passphrase):
-        encrypted_key = encrypt(passphrase, self.priv_key())
-        qrcode_terminal.draw(encrypted_key)
+        return encrypt(passphrase, self.priv_key())
 
 class EthereumAccount(Account):
     @classmethod

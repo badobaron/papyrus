@@ -3,6 +3,7 @@
 Usage:
     papyrus generate <account_type> [options]
     papyrus recover <encrypted_key>
+    papyrus --version
     papyrus --help
 
 Arguments:
@@ -10,14 +11,106 @@ Arguments:
     encrypted_key  Encrypted key
 
 Options:
-    -a FILE --address=FILE      file to be used for outputted address
-                                specifying FILE with a '.png' extension
-                                will write the data as a QR code
-    -p FILE --private_key=FILE  file to be used for outputted encrypted private key
-                                specifying FILE with a '.png' extension
-                                will write the data as a QR code
+    -a FILE --address=FILE             file to be used for generated address
+    -b FILE --address_qrcode=FILE      file to be used to save a QR code of the generated address
+
+    -p FILE --private_key=FILE         file to be used for outputted encrypted private key
+    -q FILE --private_key_qrcode=FILE  file to be used to save a QR code of the generated address
+
+    -h --help                          display this help
 """
+
 import getpass
+import qrcode
+import qrcode_terminal
 
 from docopt import docopt
 from blessings import Terminal
+
+from papyrus import (BitcoinAccount,
+                     EthereumAccount,
+                     PapyrusException,
+                     )
+from papyrus._version import get_versions
+
+VERSION = get_versions()['version']
+BITCOIN = 'bitcoin'
+ETHEREUM = 'ethereum'
+
+term = Terminal()
+
+def generate(account_type,
+             address_file=None,
+             address_qrcode_file=None,
+             private_key_file=None,
+             private_key_qrcode_file=None):
+    passphrase = getpass.getpass('Enter passphrase: ')
+    confirmed_passphrase = getpass.getpass('Confirm passphrase: ')
+
+    if passphrase != confirmed_passphrase:
+        raise PapyrusException('Passphrases do not match')
+
+    if account_type == BITCOIN:
+        account = BitcoinAccount.generate()
+    elif account_type == ETHEREUM:
+        account = EthereumAccount.generate()
+    else:
+        raise PapyrusException('Invalid account type: {}'.format(account_type))
+
+    encrypted_key = account.encrypted_priv_key(passphrase)
+
+    print()
+    print('Encrypted Private Key: ')
+    print(encrypted_key.decode('utf-8'))
+
+    if private_key_file:
+        with open(private_key_file, 'wb') as f:
+            f.write(encrypted_key)
+
+    if private_key_qrcode_file:
+        img = qrcode.make(encrypted_key)
+        img.save(private_key_qrcode_file)
+
+    print()
+    print('Address: ')
+    print(account.address())
+
+    if address_file:
+        with open(address_file, 'wb') as f:
+            f.write(account.address())
+
+    if address_qrcode_file:
+        img = qrcode.make(account.address())
+        img.save(address_qrcode_file)
+
+
+def recover():
+    pass
+
+if __name__ == '__main__':
+    args = docopt(__doc__, version=VERSION)
+
+    if args['--version']:
+        print(VERSION)
+    else:
+        account_type = args['<account_type>'].lower()
+
+        address_file = args['--address']
+        address_qrcode_file = args['--address_qrcode']
+
+        private_file = args['--private_key']
+        private_qrcode_file = args['--private_key_qrcode']
+
+        try:
+            if args['generate']:
+                generate(account_type,
+                         address_file=address_file,
+                         address_qrcode_file=address_qrcode_file,
+                         private_key_file=private_file,
+                         private_key_qrcode_file=private_qrcode_file)
+            elif args['recover']:
+                recover()
+            else:
+                print(__doc__)
+        except PapyrusException as e:
+            print(term.red(str(e)))
