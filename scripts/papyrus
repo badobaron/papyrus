@@ -4,7 +4,7 @@ Usage:
     papyrus generate <account_type> [--address_file=<FILE>] [--address_qrcode=<FILE>]
                                     [--key_file=<FILE>] [--key_qrcode=<FILE>]
     papyrus recover ((<encrypted_key_file> | --key_file=<FILE>) | --key_qrcode=<FILE> | --key=<STRING> | [-])
-                    (<decrypted_key_file> | --decrypted_key_qrcode=<FILE> | --stdout)
+                    (<decrypted_key_file> | --decrypted_key_qrcode=<FILE> | [--stdout --stdout_qrcode])
     papyrus --version
     papyrus --help
 
@@ -22,6 +22,7 @@ Options:
     --key_qrcode=<FILE>            file to be used for encrypted private key data in QR code form
     --decrypted_key_qrcode=<FILE>  file to be used for decrypted private key data in QR code form
     --stdout                       use stdout to display decrypted data
+    --stdout_qrcode                display in-terminal qrcode of the decrypted data
     -h --help                      display this help
 
 Be extremely careful using the --stdout flag. Using this flag will display your decrypted data in the terminal.
@@ -31,6 +32,7 @@ import sys
 import getpass
 import qrcode
 import qrtools
+import qrcode_terminal
 
 from docopt import docopt
 from blessings import Terminal
@@ -97,7 +99,8 @@ def generate(account_type,
 def recover(data,
             key_file=None,
             key_qrcode=None,
-            stdout=False):
+            stdout=False,
+            stdout_qrcode=False):
     passphrase = getpass.getpass('Enter passphrase: ')
 
     plain_data = decrypt(passphrase, data)
@@ -114,6 +117,10 @@ def recover(data,
         print()
         print('Private Key:')
         print(plain_data.decode('utf-8'))
+
+    if stdout_qrcode:
+        print()
+        qrcode_terminal.draw(plain_data)
 
 
 def get_key_data(key,
@@ -150,6 +157,7 @@ if __name__ == '__main__':
         decrypted_key_qrcode = args['--decrypted_key_qrcode']
 
         stdout = args['--stdout']
+        stdout_qrcode = args['--stdout_qrcode']
 
         try:
             if args['generate']:
@@ -165,7 +173,8 @@ if __name__ == '__main__':
                 recover(data,
                         key_file=decrypted_key_file,
                         key_qrcode=decrypted_key_qrcode,
-                        stdout=stdout)
+                        stdout=stdout,
+                        stdout_qrcode=stdout_qrcode)
             else:
                 print(__doc__)
         except PapyrusException as e:
