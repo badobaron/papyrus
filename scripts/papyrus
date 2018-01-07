@@ -1,31 +1,41 @@
 #!/usr/bin/env python
 """
 Usage:
-    papyrus generate <account_type> [options]
-    papyrus recover <encrypted_key>
+    papyrus generate <account_type> [--address_file=<FILE>] [--address_qrcode=<FILE>]
+                                    [--key_file=<FILE>] [--key_qrcode=<FILE>]
+    papyrus recover ((<encrypted_key_file> | --key_file=<FILE>) | --key_qrcode=<FILE> | --key=<STRING> | [-])
+                    (<decrypted_key_file> | --decrypted_key_qrcode=<FILE> | --stdout)
     papyrus --version
     papyrus --help
 
 Arguments:
-    account_type   Type of account (ethereum or bitcoin)
-    encrypted_key  Encrypted key
+    <account_type>        type of account (ethereum or bitcoin)
+    <encrypted_key_file>  path to file containing encrypted key
+                          use a single '-' to accept data through stdin
+    <decrypted_key_file>  path to file for outputting decrypted key
 
 Options:
-    -a FILE --address=FILE             file to be used for generated address
-    -b FILE --address_qrcode=FILE      file to be used to save a QR code of the generated address
+    --address_file=<FILE>          file to be used for generated address
+    --address_qrcode=<FILE>        file to be used to save a QR code of the generated address
+    --key=<STRING>                 STRING containing encrypted private key
+    --key_file=<FILE>              file to be used for encrypted private key data
+    --key_qrcode=<FILE>            file to be used for encrypted private key data in QR code form
+    --decrypted_key_qrcode=<FILE>  file to be used for decrypted private key data in QR code form
+    --stdout                       use stdout to display decrypted data
+    -h --help                      display this help
 
-    -p FILE --private_key=FILE         file to be used for outputted encrypted private key
-    -q FILE --private_key_qrcode=FILE  file to be used to save a QR code of the generated address
-
-    -h --help                          display this help
+Be extremely careful using the --stdout flag. Using this flag will display your decrypted data in the terminal.
 """
 
+import sys
 import getpass
 import qrcode
-import qrcode_terminal
+import qrtools
 
 from docopt import docopt
 from blessings import Terminal
+
+from lockbox import decrypt
 
 from papyrus import (BitcoinAccount,
                      EthereumAccount,
@@ -42,8 +52,8 @@ term = Terminal()
 def generate(account_type,
              address_file=None,
              address_qrcode_file=None,
-             private_key_file=None,
-             private_key_qrcode_file=None):
+             key_file=None,
+             key_qrcode=None):
     if account_type == BITCOIN:
         account = BitcoinAccount.generate()
     elif account_type == ETHEREUM:
@@ -57,20 +67,19 @@ def generate(account_type,
     if passphrase != confirmed_passphrase:
         raise PapyrusException('Passphrases do not match')
 
-
     encrypted_key = account.encrypted_priv_key(passphrase)
 
     print()
     print('Encrypted Private Key: ')
     print(encrypted_key.decode('utf-8'))
 
-    if private_key_file:
-        with open(private_key_file, 'wb') as f:
+    if key_file:
+        with open(key_file, 'wb') as f:
             f.write(encrypted_key)
 
-    if private_key_qrcode_file:
+    if key_qrcode:
         img = qrcode.make(encrypted_key)
-        img.save(private_key_qrcode_file)
+        img.save(key_qrcode)
 
     print()
     print('Address: ')
@@ -85,8 +94,42 @@ def generate(account_type,
         img.save(address_qrcode_file)
 
 
-def recover():
-    pass
+def recover(data,
+            key_file=None,
+            key_qrcode=None,
+            stdout=False):
+    passphrase = getpass.getpass('Enter passphrase: ')
+
+    plain_data = decrypt(passphrase, data)
+
+    if key_file:
+        with open(key_file, 'wb') as f:
+            f.write(plain_data)
+
+    if key_qrcode:
+        img = qrcode.make(plain_data)
+        img.save(key_qrcode)
+
+    if stdout:
+        print()
+        print('Private Key:')
+        print(plain_data.decode('utf-8'))
+
+
+def get_key_data(key,
+                 key_file,
+                 key_qrcode):
+    if not key:
+        if key_file:
+            with open(key_file, 'rb') as f:
+                key = f.read()
+        elif key_qrcode:
+            qr = qrtools.QR()
+            qr.decode(key_qrcode)
+            key = qr.data
+        else:
+            key = sys.stdin.read().encode('utf-8')
+    return key
 
 if __name__ == '__main__':
     args = docopt(__doc__, version=VERSION)
@@ -94,23 +137,35 @@ if __name__ == '__main__':
     if args['--version']:
         print(VERSION)
     else:
-        account_type = args['<account_type>'].lower()
+        account_type = args['<account_type>'].lower() if args['<account_type>'] else None
 
-        address_file = args['--address']
+        address_file = args['--address_file']
         address_qrcode_file = args['--address_qrcode']
 
-        private_file = args['--private_key']
-        private_qrcode_file = args['--private_key_qrcode']
+        key = args['--key']
+        key_file = args['<encrypted_key_file>'] or args['--key_file']
+        key_qrcode = args['--key_qrcode']
+
+        decrypted_key_file = args['<decrypted_key_file>']
+        decrypted_key_qrcode = args['--decrypted_key_qrcode']
+
+        stdout = args['--stdout']
 
         try:
             if args['generate']:
+
                 generate(account_type,
                          address_file=address_file,
                          address_qrcode_file=address_qrcode_file,
-                         private_key_file=private_file,
-                         private_key_qrcode_file=private_qrcode_file)
+                         key_file=key_file,
+                         key_qrcode=key_qrcode)
             elif args['recover']:
-                recover()
+                data = get_key_data(key, key_file, key_qrcode)
+
+                recover(data,
+                        key_file=decrypted_key_file,
+                        key_qrcode=decrypted_key_qrcode,
+                        stdout=stdout)
             else:
                 print(__doc__)
         except PapyrusException as e:
