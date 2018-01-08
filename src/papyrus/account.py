@@ -37,17 +37,17 @@ class Account(object):
         return bool(self._priv_key)
 
     def pub_key(self):
-        raise NotImplemented('This function must be overridden by subclasses')
+        raise NotImplementedError('This function must be overridden by subclasses')
 
     def priv_key(self):
-        raise NotImplemented('This function must be overridden by subclasses')
+        raise NotImplementedError('This function must be overridden by subclasses')
 
     def address(self):
-        raise NotImplemented('This function must be overridden by subclasses')
+        raise NotImplementedError('This function must be overridden by subclasses')
 
     @classmethod
     def generate(cls):
-        raise NotImplemented('This function must be overridden by subclasses')
+        raise NotImplementedError('This function must be overridden by subclasses')
 
     def print_qrcode(self):
         print('Address: ')
