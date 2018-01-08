@@ -1,7 +1,10 @@
 import mock
 import pytest
 
-from papyrus.account import Account
+from papyrus.account import (Account,
+                             EthereumAccount,
+                             )
+from ecdsa import SECP256k1
 
 class TestAccountInit(object):
     def setup_method(self):
@@ -79,3 +82,18 @@ class TestAccountEncryptedPrivKey(object):
         self.mock_encrypt.assert_called_once_with('test_passphrase',
                                                   self.mock_priv_key.return_value)
 
+class TestEthereumAccountGenerate(object):
+    def setup_method(self):
+        self.generate_patcher = mock.patch('papyrus.account.SigningKey.generate')
+        self.mock_generate = self.generate_patcher.start()
+
+    def teardown_method(self):
+        self.generate_patcher.stop()
+
+    def test_generate(self):
+        ret_val = EthereumAccount.generate()
+
+        assert ret_val._priv_key == self.mock_generate.return_value
+        assert ret_val._pub_key == self.mock_generate.return_value.get_verifying_key.return_value
+        self.mock_generate.assert_called_once_with(curve=SECP256k1)
+        self.mock_generate.return_value.get_verifying_key.assert_called_once_with()
