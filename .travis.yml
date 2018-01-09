@@ -2,7 +2,7 @@ language: python
 python:
     - 3.6
 install:
-    - pip install -r test_requirements.txt
+    - pip install -r test_requirements.txt --process-dependency-links
 script:
     - pytest
     - bandit -r src
