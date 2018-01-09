@@ -3,6 +3,7 @@ import pytest
 
 from papyrus.account import (Account,
                              EthereumAccount,
+                             BitcoinAccount,
                              )
 from ecdsa import SECP256k1
 
@@ -123,3 +124,125 @@ class TestEthereumAccountPubKey(object):
 
         assert expected == actual
         assert not self.priv_key.get_verifying_key.called
+
+class TestEthereumAccountPrivKey(object):
+    def setup_method(self):
+        self.priv_key = mock.MagicMock()
+        self.pub_key = mock.MagicMock()
+
+    def test_has_private_keys(self):
+        account = EthereumAccount(priv_key=self.priv_key)
+
+        expected = self.priv_key.to_string.return_value.hex.return_value
+        actual = account.priv_key()
+
+        assert expected == actual
+
+    def test_no_private_keys(self):
+        account = EthereumAccount(pub_key=self.pub_key)
+
+        with pytest.raises(ValueError):
+            account.priv_key()
+
+class TestEthereumAccountAddress(object):
+    def setup_method(self):
+        self.keccak_patcher = mock.patch('papyrus.account.sha3.keccak_256')
+        self.mock_keccak = self.keccak_patcher.start()
+        self.mock_keccak.return_value.hexdigest.return_value = '012345678901234567890123456789'
+
+        self.pub_key = mock.MagicMock()
+        self.account = EthereumAccount(pub_key=self.pub_key)
+
+    def teardown_method(self):
+        self.keccak_patcher.stop()
+
+    def test_address(self):
+        expected = '456789'
+        actual = self.account.address()
+
+        assert expected == actual
+
+class TestBitcoinAccountGenerate(object):
+    def setup_method(self):
+        self.new_random_wallet_patcher = mock.patch('papyrus.account.Wallet.new_random_wallet')
+        self.mock_new_random_wallet = self.new_random_wallet_patcher.start()
+
+    def teardown_method(self):
+        self.new_random_wallet_patcher.stop()
+
+    def test_generate(self):
+        account = BitcoinAccount.generate()
+
+        assert account._pub_key == self.mock_new_random_wallet.return_value.get_child.return_value.serialize_b58.return_value
+        assert account._priv_key == self.mock_new_random_wallet.return_value.get_child.return_value.serialize_b58.return_value
+
+        self.mock_new_random_wallet.return_value.get_child.return_value.serialize_b58.assert_has_calls([mock.call(private=False), mock.call(private=True)])
+
+class TestBitcoinAccountPubKey(object):
+    def setup_method(self):
+        self.deserialize_patcher = mock.patch('papyrus.account.Wallet.deserialize')
+        self.mock_deserialize = self.deserialize_patcher.start()
+
+        self.priv_key = mock.MagicMock()
+        self.account = BitcoinAccount(priv_key=self.priv_key)
+
+    def teardown_method(self):
+        self.deserialize_patcher.stop()
+
+    def test_pub_key(self):
+        expected = self.mock_deserialize.return_value.serialize_b58.return_value
+        actual = self.account.pub_key()
+
+        assert expected == actual
+        self.mock_deserialize.assert_called_once_with(self.priv_key)
+        self.mock_deserialize.return_value.serialize_b58.assert_called_once_with(private=False)
+
+class TestBitcoinAccountPrivKey(object):
+    def setup_method(self):
+        self.priv_key = mock.MagicMock()
+        self.pub_key = mock.MagicMock()
+
+    def test_has_private_keys(self):
+        account = BitcoinAccount(priv_key=self.priv_key)
+
+        expected = self.priv_key
+        actual = account.priv_key()
+
+        assert expected == actual
+
+    def test_no_private_keys(self):
+        account = BitcoinAccount(pub_key=self.pub_key)
+
+        with pytest.raises(ValueError):
+            account.priv_key()
+
+class TestBitcoinAccountAddress(object):
+    def setup_method(self):
+        self.deserialize_patcher = mock.patch('papyrus.account.Wallet.deserialize')
+        self.mock_deserialize = self.deserialize_patcher.start()
+
+        self.priv_key = mock.MagicMock()
+        self.pub_key = mock.MagicMock()
+
+    def teardown_method(self):
+        self.deserialize_patcher.stop()
+
+    def test_address_from_pub_key(self):
+        account = BitcoinAccount(pub_key=self.pub_key)
+
+        expected = self.mock_deserialize.return_value.to_address.return_value
+        actual = account.address()
+
+        assert expected == actual
+        self.mock_deserialize.assert_called_once_with(self.pub_key)
+        self.mock_deserialize.return_value.to_address.assert_called_once_with()
+
+    def test_address_from_priv_key(self):
+        account = BitcoinAccount(priv_key=self.priv_key)
+
+        expected = self.mock_deserialize.return_value.to_address.return_value
+        actual = account.address()
+
+        assert expected == actual
+        self.mock_deserialize.assert_called_once_with(self.priv_key)
+        self.mock_deserialize.return_value.to_address.assert_called_once_with()

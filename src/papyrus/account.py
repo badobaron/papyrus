@@ -111,7 +111,7 @@ class BitcoinAccount(Account):
 
     def address(self):
         if not self._address:
-            wallet = Wallet.deserialize(self._priv_key)
+            wallet = Wallet.deserialize(self._priv_key or self._pub_key)
             self._address = wallet.to_address()
 
         return self._address
