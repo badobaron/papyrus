@@ -65,3 +65,6 @@ $ cd papyrus
 $ python setup.py install
 $ pip install -r requirements.txt
 ```
+
+## Disclaimer
+I know nothing about cryptography. **Use this script at your own risk.** That being said, I've made a best effort attempt at being as secure as possible. If you notice anything in the code that looks suspect, please open an issue or PR with a fix.
