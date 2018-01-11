@@ -3,8 +3,8 @@
 Usage:
     papyrus generate <account_type> [--address_file=<FILE>] [--address_qrcode=<FILE>]
                                     [--key_file=<FILE>] [--key_qrcode=<FILE>] [--stdout_qrcode]
-    papyrus recover (<encrypted_key_file> | --key_qrcode=<FILE> | --key=<STRING> | [-])
-                    (<decrypted_key_file> | --decrypted_key_qrcode=<FILE> | [--stdout --stdout_qrcode])
+    papyrus recover (--key=<STRING> | --key_qrcode=<FILE> | [-] | <encrypted_key_file>)
+                    (--decrypted_key_qrcode=<FILE> | [--stdout --stdout_qrcode] | <decrypted_key_file>)
     papyrus qrcode (<data_file> | [-]) [--output_qrcode=<FILE> | --stdout_qrcode]
     papyrus --version
     papyrus --help
