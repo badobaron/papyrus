@@ -90,7 +90,7 @@ class BitcoinAccount(Account):
     @classmethod
     def generate(cls, extra_entropy=None):
         wallet = Wallet.new_random_wallet(extra_entropy)
-        child_account = wallet.get_child(0, is_prime=True, as_private=True)
+        child_account = wallet.get_child(0, is_prime=True)
 
         return cls(pub_key=child_account.serialize_b58(private=False),
                    priv_key=child_account.serialize_b58(private=True),
@@ -107,7 +107,7 @@ class BitcoinAccount(Account):
         if not self.has_private_keys:
             raise ValueError('This Account object does not contain private keys')
 
-        return self._priv_key
+        return Wallet.deserialize(self._priv_key).export_to_wif()
 
     def address(self):
         if not self._address:

@@ -3,8 +3,9 @@
 Usage:
     papyrus generate <account_type> [--address_file=<FILE>] [--address_qrcode=<FILE>]
                                     [--key_file=<FILE>] [--key_qrcode=<FILE>] [--stdout_qrcode]
-    papyrus recover ((<encrypted_key_file> | --key_file=<FILE>) | --key_qrcode=<FILE> | --key=<STRING> | [-])
+    papyrus recover (<encrypted_key_file> | --key_qrcode=<FILE> | --key=<STRING> | [-])
                     (<decrypted_key_file> | --decrypted_key_qrcode=<FILE> | [--stdout --stdout_qrcode])
+    papyrus qrcode (<data_file> | [-]) [--output_qrcode=<FILE> | --stdout_qrcode]
     papyrus --version
     papyrus --help
 
@@ -13,6 +14,7 @@ Arguments:
     <encrypted_key_file>  path to file containing encrypted key
                           use a single '-' to accept data through stdin
     <decrypted_key_file>  path to file for outputting decrypted key
+    <data_file>           file to be used to generate a qrcode
 
 Options:
     --address_file=<FILE>          file to be used for generated address
@@ -21,6 +23,7 @@ Options:
     --key_file=<FILE>              file to be used for encrypted private key data
     --key_qrcode=<FILE>            file to be used for encrypted private key data in QR code form
     --decrypted_key_qrcode=<FILE>  file to be used for decrypted private key data in QR code form
+    --output_qrcode=<FILE>         file to be used for outputted qrcode
     --stdout                       use stdout to display decrypted data
     --stdout_qrcode                display in-terminal qrcode of the data
     -h --help                      display this help
@@ -33,6 +36,7 @@ import getpass
 import qrcode
 import qrtools
 import qrcode_terminal
+import os
 
 from docopt import docopt
 from blessings import Terminal
@@ -131,21 +135,37 @@ def recover(data,
         print()
         qrcode_terminal.draw(plain_data)
 
+def qrcode_func(data,
+                output_qrcode=None,
+                stdout=False,
+                stdout_qrcode=False):
+    if output_qrcode:
+        img = qrcode.make(data)
+        img.save(output_qrcode)
+        print('Data written to {}'.format(output_qrcode))
+    else:
+        print()
+        qrcode_terminal.draw(data)
 
-def get_key_data(key,
-                 key_file,
-                 key_qrcode):
-    if not key:
-        if key_file:
-            with open(key_file, 'rb') as f:
-                key = f.read()
-        elif key_qrcode:
+def get_data(data=None,
+             data_file=None,
+             data_qrcode=None):
+    if not data:
+        if data_file == '-':
+            data = sys.stdin.read().encode('utf-8')
+        elif data_file:
+            if not os.path.exists(data_file):
+                raise PapyrusException('{} was not found'.format(data_file))
+
+            with open(data_file, 'rb') as f:
+                data = f.read()
+        elif data_qrcode:
             qr = qrtools.QR()
-            qr.decode(key_qrcode)
-            key = qr.data
+            qr.decode(data_qrcode)
+            data = qr.data
         else:
-            key = sys.stdin.read().encode('utf-8')
-    return key
+            data = sys.stdin.read().encode('utf-8')
+    return data
 
 if __name__ == '__main__':
     args = docopt(__doc__, version=VERSION)
@@ -168,6 +188,9 @@ if __name__ == '__main__':
         stdout = args['--stdout']
         stdout_qrcode = args['--stdout_qrcode']
 
+        qrcode_data = args['<data_file>']
+        output_qrcode = args['--output_qrcode']
+
         try:
             if args['generate']:
 
@@ -178,13 +201,29 @@ if __name__ == '__main__':
                          key_qrcode=key_qrcode,
                          stdout_qrcode=stdout_qrcode)
             elif args['recover']:
-                data = get_key_data(key, key_file, key_qrcode)
+                data = get_data(data=key,
+                                data_file=key_file,
+                                data_qrcode=key_qrcode)
 
-                recover(data,
-                        key_file=decrypted_key_file,
-                        key_qrcode=decrypted_key_qrcode,
-                        stdout=stdout,
-                        stdout_qrcode=stdout_qrcode)
+                if not (decrypted_key_file or
+                        decrypted_key_qrcode or
+                        stdout or
+                        stdout_qrcode):
+                    print(term.red('No outputs have been provided'))
+                    print(term.red('Either provide <decrypted_key_file> or --decrypted_key_qrcode=<FILE> for output'))
+                    print(__doc__)
+                else:
+                    recover(data,
+                            key_file=decrypted_key_file,
+                            key_qrcode=decrypted_key_qrcode,
+                            stdout=stdout,
+                            stdout_qrcode=stdout_qrcode)
+            elif args['qrcode']:
+                data = get_data(data_file=qrcode_data)
+                qrcode_func(data,
+                            output_qrcode=output_qrcode,
+                            stdout=stdout,
+                            stdout_qrcode=stdout_qrcode)
             else:
                 print(__doc__)
         except PapyrusException as e:
