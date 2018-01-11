@@ -1,32 +1,28 @@
 #!/usr/bin/env python
 """
 Usage:
-    papyrus generate <account_type> [--address_file=<FILE>] [--address_qrcode=<FILE>]
-                                    [--key_file=<FILE>] [--key_qrcode=<FILE>] [--stdout_qrcode]
-    papyrus recover (--key=<STRING> | --key_qrcode=<FILE> | [-] | <encrypted_key_file>)
-                    (--decrypted_key_qrcode=<FILE> | [--stdout --stdout_qrcode] | <decrypted_key_file>)
-    papyrus qrcode (<data_file> | [-]) [--output_qrcode=<FILE> | --stdout_qrcode]
+    papyrus generate <ACCOUNT_TYPE> [--address=<FILE>] [--key=<FILE>] [--qrcode]
+    papyrus recover (--string=<STRING> | [-] | <ENCRYPTED_KEY_FILE>)
+                    ([--stdout --qrcode] | <DECRYPTED_KEY_FILE>)
+    papyrus qrcode ([-] | <FILE>) (--output=<FILE> | --qrcode)
     papyrus --version
     papyrus --help
 
 Arguments:
-    <account_type>        type of account (ethereum or bitcoin)
-    <encrypted_key_file>  path to file containing encrypted key
+    <ACCOUNT_TYPE>        type of account (ethereum or bitcoin)
+    <FILE>                specify the path to a file
+                          (using a .png extension will treat the file as a qrcode, ascii otherwise)
+    <STRING>              ascii string containing an encrypted key
+    <ENCRYPTED_KEY_FILE>  path to file containing encrypted key
                           use a single '-' to accept data through stdin
-    <decrypted_key_file>  path to file for outputting decrypted key
-    <data_file>           file to be used to generate a qrcode
+    <DECRYPTED_KEY_FILE>  path to file for outputting decrypted key
 
 Options:
-    --address_file=<FILE>          file to be used for generated address
-    --address_qrcode=<FILE>        file to be used to save a QR code of the generated address
-    --key=<STRING>                 STRING containing encrypted private key
-    --key_file=<FILE>              file to be used for encrypted private key data
-    --key_qrcode=<FILE>            file to be used for encrypted private key data in QR code form
-    --decrypted_key_qrcode=<FILE>  file to be used for decrypted private key data in QR code form
-    --output_qrcode=<FILE>         file to be used for outputted qrcode
-    --stdout                       use stdout to display decrypted data
-    --stdout_qrcode                display in-terminal qrcode of the data
-    -h --help                      display this help
+    --address=<FILE>  file to be used for generated address
+    --key=<STRING>    STRING containing encrypted private key
+    --stdout          use stdout to display decrypted data
+    --qrcode          display in-terminal qrcode of the data
+    -h --help         display this help
 
 Be extremely careful using the --stdout flag. Using this flag will display your decrypted data in the terminal.
 """
@@ -57,10 +53,9 @@ term = Terminal()
 
 def generate(account_type,
              address_file=None,
-             address_qrcode_file=None,
              key_file=None,
-             key_qrcode=None,
-             stdout_qrcode=False):
+             stdout_qrcode=False,
+             ):
     if account_type == BITCOIN:
         account = BitcoinAccount.generate()
     elif account_type == ETHEREUM:
@@ -81,12 +76,12 @@ def generate(account_type,
     print(encrypted_key.decode('utf-8'))
 
     if key_file:
-        with open(key_file, 'wb') as f:
-            f.write(encrypted_key)
-
-    if key_qrcode:
-        img = qrcode.make(encrypted_key)
-        img.save(key_qrcode)
+        if os.path.splitext(key_file)[1].lower() == '.png':
+            img = qrcode.make(encrypted_key)
+            img.save(key_file)
+        else:
+            with open(key_file, 'wb') as f:
+                f.write(encrypted_key)
 
     if stdout_qrcode:
         print()
@@ -97,12 +92,12 @@ def generate(account_type,
     print(account.address())
 
     if address_file:
-        with open(address_file, 'wb') as f:
-            f.write(account.address())
-
-    if address_qrcode_file:
-        img = qrcode.make(account.address())
-        img.save(address_qrcode_file)
+        if os.path.splitext(address_file)[1].lower() == '.png':
+            img = qrcode.make(account.address())
+            img.save(address_file)
+        else:
+            with open(address_file, 'wb') as f:
+                f.write(account.address())
 
     if stdout_qrcode:
         print()
@@ -111,7 +106,6 @@ def generate(account_type,
 
 def recover(data,
             key_file=None,
-            key_qrcode=None,
             stdout=False,
             stdout_qrcode=False):
     passphrase = getpass.getpass('Enter passphrase: ')
@@ -119,12 +113,12 @@ def recover(data,
     plain_data = decrypt(passphrase, data)
 
     if key_file:
-        with open(key_file, 'wb') as f:
-            f.write(plain_data)
-
-    if key_qrcode:
-        img = qrcode.make(plain_data)
-        img.save(key_qrcode)
+        if os.path.splitext(key_file)[1].lower() == '.png':
+            img = qrcode.make(plain_data)
+            img.save(key_file)
+        else:
+            with open(key_file, 'wb') as f:
+                f.write(plain_data)
 
     if stdout:
         print()
@@ -136,33 +130,35 @@ def recover(data,
         qrcode_terminal.draw(plain_data)
 
 def qrcode_func(data,
-                output_qrcode=None,
-                stdout=False,
+                output=None,
                 stdout_qrcode=False):
-    if output_qrcode:
+    if output:
         img = qrcode.make(data)
-        img.save(output_qrcode)
-        print('Data written to {}'.format(output_qrcode))
-    else:
+        img.save(output)
+        print('Data written to {}'.format(output))
+
+    if stdout_qrcode:
         print()
         qrcode_terminal.draw(data)
 
 def get_data(data=None,
              data_file=None,
-             data_qrcode=None):
+             ):
     if not data:
-        if data_file == '-':
-            data = sys.stdin.read().encode('utf-8')
-        elif data_file:
-            if not os.path.exists(data_file):
-                raise PapyrusException('{} was not found'.format(data_file))
+        if data_file:
+            if data_file == '-':
+                data = sys.stdin.read().encode('utf-8')
+            else:
+                if not os.path.exists(data_file):
+                    raise PapyrusException('{} was not found'.format(data_file))
 
-            with open(data_file, 'rb') as f:
-                data = f.read()
-        elif data_qrcode:
-            qr = qrtools.QR()
-            qr.decode(data_qrcode)
-            data = qr.data
+                if os.path.splitext(data_file)[1].lower() == '.png':
+                    qr = qrtools.QR()
+                    qr.decode(data_file)
+                    data = qr.data
+                else:
+                    with open(data_file, 'rb') as f:
+                        data = f.read()
         else:
             data = sys.stdin.read().encode('utf-8')
     return data
@@ -173,40 +169,36 @@ if __name__ == '__main__':
     if args['--version']:
         print(VERSION)
     else:
-        account_type = args['<account_type>'].lower() if args['<account_type>'] else None
+        account_type = args['<ACCOUNT_TYPE>'].lower() if args['<ACCOUNT_TYPE>'] else None
 
-        address_file = args['--address_file']
-        address_qrcode_file = args['--address_qrcode']
+        address_file = args['--address']
 
         key = args['--key']
-        key_file = args['<encrypted_key_file>'] or args['--key_file']
-        key_qrcode = args['--key_qrcode']
+        key_file = args['<ENCRYPTED_KEY_FILE>']
+        stdout_qrcode = args['--qrcode']
 
-        decrypted_key_file = args['<decrypted_key_file>']
-        decrypted_key_qrcode = args['--decrypted_key_qrcode']
+        decrypted_key_file = args['<DECRYPTED_KEY_FILE>']
 
         stdout = args['--stdout']
-        stdout_qrcode = args['--stdout_qrcode']
 
-        qrcode_data = args['<data_file>']
-        output_qrcode = args['--output_qrcode']
+        data_file = args['<FILE>']
+        output = args['--output']
+
+        string = args['--string']
 
         try:
             if args['generate']:
 
                 generate(account_type,
                          address_file=address_file,
-                         address_qrcode_file=address_qrcode_file,
-                         key_file=key_file,
-                         key_qrcode=key_qrcode,
+                         key_file=key,
                          stdout_qrcode=stdout_qrcode)
             elif args['recover']:
-                data = get_data(data=key,
+                data = get_data(data=string,
                                 data_file=key_file,
-                                data_qrcode=key_qrcode)
+                                )
 
                 if not (decrypted_key_file or
-                        decrypted_key_qrcode or
                         stdout or
                         stdout_qrcode):
                     print(term.red('No outputs have been provided'))
@@ -215,14 +207,12 @@ if __name__ == '__main__':
                 else:
                     recover(data,
                             key_file=decrypted_key_file,
-                            key_qrcode=decrypted_key_qrcode,
                             stdout=stdout,
                             stdout_qrcode=stdout_qrcode)
             elif args['qrcode']:
-                data = get_data(data_file=qrcode_data)
+                data = get_data(data_file=data_file)
                 qrcode_func(data,
-                            output_qrcode=output_qrcode,
-                            stdout=stdout,
+                            output=output,
                             stdout_qrcode=stdout_qrcode)
             else:
                 print(__doc__)
