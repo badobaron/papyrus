@@ -12,16 +12,16 @@ Enter passphrase:
 Confirm passphrase:
 
 Encrypted Private Key:
-11ktHb6...
+NlLBC4w...
 
 Address:
-13K8TSg...
+12P4Lrr...
 
-$ papyrus recover --key '11ktHb6...' --stdout
+$ papyrus recover -k 'NlLBC4w...' --stdout
 Enter passphrase:
 
 Private Key:
-xprv...
+L3cfaMY...
 
 $ papyrus -h
 Usage:
