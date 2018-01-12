@@ -25,29 +25,29 @@ xprv...
 
 $ papyrus -h
 Usage:
-    papyrus generate <account_type> [--address_file=<FILE>] [--address_qrcode=<FILE>]
-                                    [--key_file=<FILE>] [--key_qrcode=<FILE>] [--stdout_qrcode]
-    papyrus recover ((<encrypted_key_file> | --key_file=<FILE>) | --key_qrcode=<FILE> | --key=<STRING> | [-])
-                    (<decrypted_key_file> | --decrypted_key_qrcode=<FILE> | [--stdout --stdout_qrcode])
+    papyrus generate <ACCOUNT_TYPE> [--address=<FILE>] [--output=<FILE>] [--qrcode]
+    papyrus recover (--key=<STRING> | [-] | <ENCRYPTED_KEY_FILE>)
+                    ([--stdout --qrcode] | <DECRYPTED_KEY_FILE>)
+    papyrus qrcode ([-] | <FILE>) (--output=<FILE> | --qrcode)
     papyrus --version
     papyrus --help
 
 Arguments:
-    <account_type>        type of account (ethereum or bitcoin)
-    <encrypted_key_file>  path to file containing encrypted key
+    <ACCOUNT_TYPE>        type of account (ethereum or bitcoin)
+    <FILE>                specify the path to a file
+                          (using a .png extension will treat the file as a qrcode, ascii otherwise)
+    <STRING>              ascii string containing an encrypted key
+    <ENCRYPTED_KEY_FILE>  path to file containing encrypted key
                           use a single '-' to accept data through stdin
-    <decrypted_key_file>  path to file for outputting decrypted key
+    <DECRYPTED_KEY_FILE>  path to file for outputting decrypted key
 
 Options:
-    --address_file=<FILE>          file to be used for generated address
-    --address_qrcode=<FILE>        file to be used to save a QR code of the generated address
-    --key=<STRING>                 STRING containing encrypted private key
-    --key_file=<FILE>              file to be used for encrypted private key data
-    --key_qrcode=<FILE>            file to be used for encrypted private key data in QR code form
-    --decrypted_key_qrcode=<FILE>  file to be used for decrypted private key data in QR code form
-    --stdout                       use stdout to display decrypted data
-    --stdout_qrcode                display in-terminal qrcode of the data
-    -h --help                      display this help
+    -a --address=<FILE>  file to be used for generated address
+    -o --output=<FILE>   file to be used for outputted data
+    -k --key=<STRING>    STRING containing encrypted private key
+    -s --stdout          use stdout to display decrypted data
+    -q --qrcode          display in-terminal qrcode of the data
+    -h --help            display this help
 
 Be extremely careful using the --stdout flag. Using this flag will display your decrypted data in the terminal.
 ```
