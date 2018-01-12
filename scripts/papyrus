@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """
 Usage:
-    papyrus generate <ACCOUNT_TYPE> [--address=<FILE>] [--key=<FILE>] [--qrcode]
-    papyrus recover (--string=<STRING> | [-] | <ENCRYPTED_KEY_FILE>)
+    papyrus generate <ACCOUNT_TYPE> [--address=<FILE>] [--output=<FILE>] [--qrcode]
+    papyrus recover (--key=<STRING> | [-] | <ENCRYPTED_KEY_FILE>)
                     ([--stdout --qrcode] | <DECRYPTED_KEY_FILE>)
     papyrus qrcode ([-] | <FILE>) (--output=<FILE> | --qrcode)
     papyrus --version
@@ -18,11 +18,12 @@ Arguments:
     <DECRYPTED_KEY_FILE>  path to file for outputting decrypted key
 
 Options:
-    --address=<FILE>  file to be used for generated address
-    --key=<STRING>    STRING containing encrypted private key
-    --stdout          use stdout to display decrypted data
-    --qrcode          display in-terminal qrcode of the data
-    -h --help         display this help
+    -a --address=<FILE>  file to be used for generated address
+    -o --output=<FILE>   file to be used for outputted data
+    -k --key=<STRING>    STRING containing encrypted private key
+    -s --stdout          use stdout to display decrypted data
+    -q --qrcode          display in-terminal qrcode of the data
+    -h --help            display this help
 
 Be extremely careful using the --stdout flag. Using this flag will display your decrypted data in the terminal.
 """
@@ -172,29 +173,27 @@ if __name__ == '__main__':
         account_type = args['<ACCOUNT_TYPE>'].lower() if args['<ACCOUNT_TYPE>'] else None
 
         address_file = args['--address']
+        output = args['--output']
+        stdout_qrcode = args['--qrcode']
 
         key = args['--key']
         key_file = args['<ENCRYPTED_KEY_FILE>']
-        stdout_qrcode = args['--qrcode']
 
         decrypted_key_file = args['<DECRYPTED_KEY_FILE>']
 
         stdout = args['--stdout']
 
         data_file = args['<FILE>']
-        output = args['--output']
-
-        string = args['--string']
 
         try:
             if args['generate']:
 
                 generate(account_type,
                          address_file=address_file,
-                         key_file=key,
+                         key_file=output,
                          stdout_qrcode=stdout_qrcode)
             elif args['recover']:
-                data = get_data(data=string,
+                data = get_data(data=key,
                                 data_file=key_file,
                                 )
 

@@ -82,7 +82,7 @@ class EthereumAccount(Account):
             keccak = sha3.keccak_256()
             keccak.update(self._pub_key.to_string())
 
-            self._address = keccak.hexdigest()[24:]
+            self._address = '0x' + keccak.hexdigest()[24:]
 
         return self._address
 

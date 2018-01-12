@@ -157,7 +157,7 @@ class TestEthereumAccountAddress(object):
         self.keccak_patcher.stop()
 
     def test_address(self):
-        expected = '456789'
+        expected = '0x456789'
         actual = self.account.address()
 
         assert expected == actual
@@ -202,13 +202,21 @@ class TestBitcoinAccountPrivKey(object):
         self.priv_key = mock.MagicMock()
         self.pub_key = mock.MagicMock()
 
+        self.deserialize_patcher = mock.patch('papyrus.account.Wallet.deserialize')
+        self.mock_deserialize = self.deserialize_patcher.start()
+
+    def teardown_method(self):
+        self.deserialize_patcher.stop()
+
     def test_has_private_keys(self):
         account = BitcoinAccount(priv_key=self.priv_key)
 
-        expected = self.priv_key
+        expected = self.mock_deserialize.return_value.export_to_wif.return_value
         actual = account.priv_key()
 
         assert expected == actual
+        self.mock_deserialize.assert_called_once_with(self.priv_key)
+        self.mock_deserialize.return_value.export_to_wif.assert_called_once_with()
 
     def test_no_private_keys(self):
         account = BitcoinAccount(pub_key=self.pub_key)
