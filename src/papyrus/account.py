@@ -2,6 +2,7 @@ import sha3
 import qrcode_terminal
 
 from bitmerchant.wallet import Wallet
+from bitmerchant.network import BitcoinTestNet, BitcoinMainNet
 from ecdsa import SigningKey, SECP256k1
 from lockbox import encrypt
 
@@ -13,6 +14,7 @@ class Account(object):
                  pub_key=None,
                  priv_key=None,
                  address=None,
+                 network=None,
                  ):
         if not pub_key and not priv_key:
             raise ValueError('A private or public key must be provided')
@@ -20,6 +22,7 @@ class Account(object):
         self._pub_key = pub_key
         self._priv_key = priv_key
         self._address = address
+        self._network = network
 
     def __str__(self):
         if self.has_private_keys:
@@ -88,17 +91,19 @@ class EthereumAccount(Account):
 
 class BitcoinAccount(Account):
     @classmethod
-    def generate(cls, extra_entropy=None):
-        wallet = Wallet.new_random_wallet(extra_entropy)
+    def generate(cls, extra_entropy=None, testnet=False):
+        network = BitcoinMainNet if not testnet else BitcoinTestNet
+        wallet = Wallet.new_random_wallet(extra_entropy, network=network)
         child_account = wallet.get_child(0, is_prime=True)
 
         return cls(pub_key=child_account.serialize_b58(private=False),
                    priv_key=child_account.serialize_b58(private=True),
+                   network=network,
                    )
 
     def pub_key(self):
         if not self._pub_key:
-            wallet = Wallet.deserialize(self._priv_key)
+            wallet = Wallet.deserialize(self._priv_key, network=self._network)
             self._pub_key = wallet.serialize_b58(private=False)
 
         return self._pub_key
@@ -107,11 +112,11 @@ class BitcoinAccount(Account):
         if not self.has_private_keys:
             raise ValueError('This Account object does not contain private keys')
 
-        return Wallet.deserialize(self._priv_key).export_to_wif()
+        return Wallet.deserialize(self._priv_key, network=self._network).export_to_wif()
 
     def address(self):
         if not self._address:
-            wallet = Wallet.deserialize(self._priv_key or self._pub_key)
+            wallet = Wallet.deserialize(self._priv_key or self._pub_key, network=self._network)
             self._address = wallet.to_address()
 
         return self._address

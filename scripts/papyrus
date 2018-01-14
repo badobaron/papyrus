@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Usage:
-    papyrus generate <ACCOUNT_TYPE> [--address=<FILE>] [--output=<FILE>] [--qrcode]
+    papyrus generate <ACCOUNT_TYPE> [--address=<FILE>] [--output=<FILE>] [--qrcode] [--testnet]
     papyrus recover (--key=<STRING> | [-] | <ENCRYPTED_KEY_FILE>)
                     ([--stdout --qrcode] | <DECRYPTED_KEY_FILE>)
     papyrus qrcode ([-] | <FILE>) (--output=<FILE> | --qrcode)
@@ -23,6 +23,7 @@ Options:
     -k --key=<STRING>    STRING containing encrypted private key
     -s --stdout          use stdout to display decrypted data
     -q --qrcode          display in-terminal qrcode of the data
+    -t --testnet         generate accounts to be used on the bitcoin testnet
     -h --help            display this help
 
 Be extremely careful using the --stdout flag. Using this flag will display your decrypted data in the terminal.
@@ -38,7 +39,7 @@ import os
 from docopt import docopt
 from blessings import Terminal
 
-from lockbox import decrypt
+from lockbox import decrypt, LockBoxException
 
 from papyrus import (BitcoinAccount,
                      EthereumAccount,
@@ -56,10 +57,13 @@ def generate(account_type,
              address_file=None,
              key_file=None,
              stdout_qrcode=False,
+             testnet=False,
              ):
     if account_type == BITCOIN:
-        account = BitcoinAccount.generate()
+        account = BitcoinAccount.generate(testnet=testnet)
     elif account_type == ETHEREUM:
+        if testnet:
+            raise PapyrusException('Ethereum testnet is not supported')
         account = EthereumAccount.generate()
     else:
         raise PapyrusException('Invalid account type: {}'.format(account_type))
@@ -176,6 +180,8 @@ if __name__ == '__main__':
         output = args['--output']
         stdout_qrcode = args['--qrcode']
 
+        testnet = args['--testnet']
+
         key = args['--key']
         key_file = args['<ENCRYPTED_KEY_FILE>']
 
@@ -191,7 +197,8 @@ if __name__ == '__main__':
                 generate(account_type,
                          address_file=address_file,
                          key_file=output,
-                         stdout_qrcode=stdout_qrcode)
+                         stdout_qrcode=stdout_qrcode,
+                         testnet=testnet)
             elif args['recover']:
                 data = get_data(data=key,
                                 data_file=key_file,
@@ -204,10 +211,13 @@ if __name__ == '__main__':
                     print(term.red('Either provide <decrypted_key_file> or --decrypted_key_qrcode=<FILE> for output'))
                     print(__doc__)
                 else:
-                    recover(data,
-                            key_file=decrypted_key_file,
-                            stdout=stdout,
-                            stdout_qrcode=stdout_qrcode)
+                    try:
+                        recover(data,
+                                key_file=decrypted_key_file,
+                                stdout=stdout,
+                                stdout_qrcode=stdout_qrcode)
+                    except LockBoxException as e:
+                        raise PapyrusException(str(e))
             elif args['qrcode']:
                 data = get_data(data_file=data_file)
                 qrcode_func(data,
