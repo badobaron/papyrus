@@ -5,6 +5,7 @@ from papyrus.account import (Account,
                              EthereumAccount,
                              BitcoinAccount,
                              )
+from bitmerchant.network import BitcoinTestNet, BitcoinMainNet
 from ecdsa import SECP256k1
 
 class TestAccountInit(object):
@@ -184,7 +185,7 @@ class TestBitcoinAccountPubKey(object):
         self.mock_deserialize = self.deserialize_patcher.start()
 
         self.priv_key = mock.MagicMock()
-        self.account = BitcoinAccount(priv_key=self.priv_key)
+        self.account = BitcoinAccount(priv_key=self.priv_key, network=BitcoinTestNet)
 
     def teardown_method(self):
         self.deserialize_patcher.stop()
@@ -194,7 +195,7 @@ class TestBitcoinAccountPubKey(object):
         actual = self.account.pub_key()
 
         assert expected == actual
-        self.mock_deserialize.assert_called_once_with(self.priv_key)
+        self.mock_deserialize.assert_called_once_with(self.priv_key, network=BitcoinTestNet)
         self.mock_deserialize.return_value.serialize_b58.assert_called_once_with(private=False)
 
 class TestBitcoinAccountPrivKey(object):
@@ -209,17 +210,17 @@ class TestBitcoinAccountPrivKey(object):
         self.deserialize_patcher.stop()
 
     def test_has_private_keys(self):
-        account = BitcoinAccount(priv_key=self.priv_key)
+        account = BitcoinAccount(priv_key=self.priv_key, network=BitcoinTestNet)
 
         expected = self.mock_deserialize.return_value.export_to_wif.return_value
         actual = account.priv_key()
 
         assert expected == actual
-        self.mock_deserialize.assert_called_once_with(self.priv_key)
+        self.mock_deserialize.assert_called_once_with(self.priv_key, network=BitcoinTestNet)
         self.mock_deserialize.return_value.export_to_wif.assert_called_once_with()
 
     def test_no_private_keys(self):
-        account = BitcoinAccount(pub_key=self.pub_key)
+        account = BitcoinAccount(pub_key=self.pub_key, network=BitcoinTestNet)
 
         with pytest.raises(ValueError):
             account.priv_key()
@@ -236,21 +237,21 @@ class TestBitcoinAccountAddress(object):
         self.deserialize_patcher.stop()
 
     def test_address_from_pub_key(self):
-        account = BitcoinAccount(pub_key=self.pub_key)
+        account = BitcoinAccount(pub_key=self.pub_key, network=BitcoinTestNet)
 
         expected = self.mock_deserialize.return_value.to_address.return_value
         actual = account.address()
 
         assert expected == actual
-        self.mock_deserialize.assert_called_once_with(self.pub_key)
+        self.mock_deserialize.assert_called_once_with(self.pub_key, network=BitcoinTestNet)
         self.mock_deserialize.return_value.to_address.assert_called_once_with()
 
     def test_address_from_priv_key(self):
-        account = BitcoinAccount(priv_key=self.priv_key)
+        account = BitcoinAccount(priv_key=self.priv_key, network=BitcoinTestNet)
 
         expected = self.mock_deserialize.return_value.to_address.return_value
         actual = account.address()
 
         assert expected == actual
-        self.mock_deserialize.assert_called_once_with(self.priv_key)
+        self.mock_deserialize.assert_called_once_with(self.priv_key, network=BitcoinTestNet)
         self.mock_deserialize.return_value.to_address.assert_called_once_with()

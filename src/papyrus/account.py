@@ -90,6 +90,21 @@ class EthereumAccount(Account):
         return self._address
 
 class BitcoinAccount(Account):
+    def __init__(self,
+                 pub_key=None,
+                 priv_key=None,
+                 address=None,
+                 network=None,
+                 ):
+        if network not in (BitcoinTestNet, BitcoinMainNet):
+            raise ValueError('A valid network must be provided')
+
+        super().__init__(pub_key=pub_key,
+                         priv_key=priv_key,
+                         address=address,
+                         network=network,
+                         )
+
     @classmethod
     def generate(cls, extra_entropy=None, testnet=False):
         network = BitcoinMainNet if not testnet else BitcoinTestNet
